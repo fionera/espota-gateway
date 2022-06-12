@@ -35,7 +35,7 @@ func (g *gateway) handleConn(conn net.Conn) {
 		_ = conn.SetDeadline(time.Now().Add(10 * time.Second))
 		if _, err := io.CopyN(conn, b, 1024); err != nil {
 			if !errors.Is(err, io.EOF) {
-				c <- "Error sending data\n"
+				c <- "\nError sending data\n"
 				return
 			}
 		}
@@ -43,7 +43,7 @@ func (g *gateway) handleConn(conn net.Conn) {
 		buf := make([]byte, 10)
 		_, _ = conn.Read(buf)
 		if bytes.Contains(buf, []byte("OK")) {
-			c <- "Done\n"
+			c <- "\nDone\n"
 			return
 		}
 
@@ -51,6 +51,7 @@ func (g *gateway) handleConn(conn net.Conn) {
 			break
 		}
 	}
+	c <- "\n"
 
 	buf := make([]byte, 32)
 	_, _ = conn.Read(buf)

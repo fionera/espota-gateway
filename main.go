@@ -143,6 +143,7 @@ func (g *gateway) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "text/plain")
+	w.Header().Set("Transfer-Encoding", "chunked")
 	w.WriteHeader(http.StatusOK)
 	c := g.handleFlash(&p)
 	for s := range c {
