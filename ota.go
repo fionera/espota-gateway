@@ -29,7 +29,7 @@ func (g *gateway) handleConn(conn net.Conn) {
 	defer close(c)
 
 	b := bytes.NewReader(data)
-	for {
+	for i := 0; true; i++ {
 		c <- "sending chunk"
 		_ = conn.SetDeadline(time.Now().Add(10 * time.Second))
 		if _, err := io.CopyN(conn, b, 1024); err != nil {
@@ -41,13 +41,21 @@ func (g *gateway) handleConn(conn net.Conn) {
 
 		buf := make([]byte, 10)
 		_, _ = conn.Read(buf)
+		if bytes.Contains(buf, []byte("OK")) {
+			c <- "Done"
+			return
+		}
+
 		if b.Len() == 0 {
-			if !bytes.Contains(buf, []byte("OK")) {
-				c <- "Error Uploading:" + fmt.Sprintf("%s (%x)", buf, buf)
-				return
-			}
 			break
 		}
+	}
+
+	buf := make([]byte, 32)
+	_, _ = conn.Read(buf)
+	if !bytes.Contains(buf, []byte("OK")) {
+		c <- "Error Uploading:" + fmt.Sprintf("%s (%x)", buf, buf)
+		return
 	}
 
 	c <- "Done"
