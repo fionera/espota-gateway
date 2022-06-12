@@ -22,6 +22,7 @@ func (g *gateway) sendInvitation(c chan string, ip net.IP, cmd command, payload 
 		cn, err := net.Dial("udp", ip.String()+":8266")
 		if err != nil {
 			c <- fmt.Sprintf("try %d/10: %s", i+1, err)
+			time.Sleep(1 * time.Second)
 			continue
 		}
 		conn = cn
