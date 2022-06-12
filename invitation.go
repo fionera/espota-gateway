@@ -40,7 +40,9 @@ func (g *gateway) sendInvitation(c chan string, ip net.IP, cmd command, payload 
 
 		buf := make([]byte, 37)
 		if _, err := conn.Read(buf); err != nil {
-			return err
+			c <- fmt.Sprintf("try %d/10: %s\n", i+1, err)
+			time.Sleep(1 * time.Second)
+			continue
 		}
 
 		if !strings.HasPrefix(string(buf), "OK") {
