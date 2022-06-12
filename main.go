@@ -146,7 +146,7 @@ func (g *gateway) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	c := g.handleFlash(&p)
 	for s := range c {
-		w.Write([]byte(s + "\n"))
+		w.Write([]byte(s))
 		if f, ok := w.(http.Flusher); ok {
 			f.Flush()
 		}
@@ -177,7 +177,7 @@ func (g *gateway) handleFlash(p *Payload) <-chan string {
 			g.payloadMap[p.IP.String()] = p.Firmware
 			g.mtx.Unlock()
 
-			c <- "Sending Flash Invite"
+			c <- "Sending Flash Invite\n"
 			err := g.sendInvitation(c, p.IP, Flash, p.Firmware)
 			if err != nil {
 				c <- err.Error()
@@ -202,7 +202,7 @@ func (g *gateway) handleFlash(p *Payload) <-chan string {
 			g.payloadMap[p.IP.String()] = p.SpiFS
 			g.mtx.Unlock()
 
-			c <- "Sending SpiFS Invite"
+			c <- "Sending SpiFS Invite\n"
 			err := g.sendInvitation(c, p.IP, SpiFS, p.SpiFS)
 			if err != nil {
 				c <- err.Error()
@@ -215,7 +215,7 @@ func (g *gateway) handleFlash(p *Payload) <-chan string {
 			}
 		}
 
-		c <- "done"
+		c <- "Thanks for using the OTA-Gateway\n"
 	}()
 
 	return c

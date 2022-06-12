@@ -25,16 +25,17 @@ func (g *gateway) handleConn(conn net.Conn) {
 
 	c := g.chanMap[ip.String()]
 	g.mtx.Unlock()
-	c <- "Got connection"
+	c <- "Got connection\n"
 	defer close(c)
 
 	b := bytes.NewReader(data)
-	for i := 0; true; i++ {
-		c <- "sending chunk"
+	c <- "Sending chunks"
+	for {
+		c <- "."
 		_ = conn.SetDeadline(time.Now().Add(10 * time.Second))
 		if _, err := io.CopyN(conn, b, 1024); err != nil {
 			if !errors.Is(err, io.EOF) {
-				c <- "error writing"
+				c <- "Error sending data\n"
 				return
 			}
 		}
@@ -42,7 +43,7 @@ func (g *gateway) handleConn(conn net.Conn) {
 		buf := make([]byte, 10)
 		_, _ = conn.Read(buf)
 		if bytes.Contains(buf, []byte("OK")) {
-			c <- "Done"
+			c <- "Done\n"
 			return
 		}
 
@@ -54,9 +55,9 @@ func (g *gateway) handleConn(conn net.Conn) {
 	buf := make([]byte, 32)
 	_, _ = conn.Read(buf)
 	if !bytes.Contains(buf, []byte("OK")) {
-		c <- "Error Uploading:" + fmt.Sprintf("%s (%x)", buf, buf)
+		c <- fmt.Sprintf("Error Uploading: %s (%x)\n", buf, buf)
 		return
 	}
 
-	c <- "Done"
+	c <- "Flashing complete\n"
 }
