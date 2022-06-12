@@ -29,27 +29,27 @@ func (g *gateway) handleConn(conn net.Conn) {
 	defer close(c)
 
 	b := bytes.NewReader(data)
+	var isEOF bool
 	for {
 		c <- "sending chunk"
 		_ = conn.SetDeadline(time.Now().Add(10 * time.Second))
 		_, err := io.CopyN(conn, b, 1024)
 		if err != nil {
-			if errors.Is(err, io.EOF) {
-				goto read
+			if !errors.Is(err, io.EOF) {
+				c <- "error writing"
+				return
 			}
-			c <- "error writing"
-			return
+			isEOF = true
 		}
 
-	read:
 		buf := make([]byte, 10)
 		_, _ = conn.Read(buf)
-		if !bytes.Contains(buf, []byte("OK")) {
+		if isEOF && !bytes.Contains(buf, []byte("OK")) {
 			c <- "Error Uploading:" + fmt.Sprintf("%s (%x)", buf, buf)
 			return
 		}
 
-		if b.Len() == 0 {
+		if isEOF {
 			break
 		}
 	}
