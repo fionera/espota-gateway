@@ -31,7 +31,7 @@ func (g *gateway) handleConn(conn net.Conn) {
 	b := bytes.NewReader(data)
 	c <- "Sending chunks\n"
 	for i := 0; true; i++ {
-		c <- fmt.Sprintf("\r%d", i)
+		c <- "."
 		_ = conn.SetDeadline(time.Now().Add(10 * time.Second))
 		if _, err := io.CopyN(conn, b, 1024); err != nil {
 			if !errors.Is(err, io.EOF) {
