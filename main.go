@@ -142,6 +142,8 @@ func (g *gateway) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	w.Header().Set("Content-Type", "text/plain")
+	w.WriteHeader(http.StatusOK)
 	c := g.handleFlash(&p)
 	for s := range c {
 		w.Write([]byte(s + "\n"))
