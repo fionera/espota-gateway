@@ -25,7 +25,8 @@ type gateway struct {
 
 func newGateway(fwAddr, spifAddr string) (*gateway, error) {
 	g := gateway{
-		chanMap: make(map[string]chan string),
+		chanMap:    make(map[string]chan string),
+		payloadMap: make(map[string][]byte),
 	}
 
 	firmwareListener, err := newListener(fwAddr, g.handleConn)
@@ -143,7 +144,10 @@ func (g *gateway) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	c := g.handleFlash(&p)
 	for s := range c {
-		w.Write([]byte(s))
+		w.Write([]byte(s + "\n"))
+		if f, ok := w.(http.Flusher); ok {
+			f.Flush()
+		}
 	}
 }
 
