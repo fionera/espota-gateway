@@ -3,10 +3,10 @@ package main
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"io"
 	"log"
 	"net"
-	"strings"
 	"time"
 )
 
@@ -44,8 +44,8 @@ func (g *gateway) handleConn(conn net.Conn) {
 	read:
 		buf := make([]byte, 10)
 		_, _ = conn.Read(buf)
-		if !strings.HasPrefix(string(buf), "OK") {
-			c <- "Error Uploading:" + string(buf)
+		if !bytes.Contains(buf, []byte("OK")) {
+			c <- "Error Uploading:" + fmt.Sprintf("%s (%x)", buf, buf)
 			return
 		}
 
