@@ -53,12 +53,17 @@ func (g *gateway) handleConn(conn net.Conn) {
 	}
 	c <- "\n"
 
-	buf := make([]byte, 32)
-	_, _ = conn.Read(buf)
-	if !bytes.Contains(buf, []byte("OK")) {
-		c <- fmt.Sprintf("Error Uploading: %s (%x)\n", buf, buf)
-		return
-	}
+	for i := 0; true; i++ {
+		buf := make([]byte, 32)
+		_, _ = conn.Read(buf)
+		if bytes.Contains(buf, []byte("OK")) {
+			c <- "Flashing complete\n"
+			return
+		}
 
-	c <- "Flashing complete\n"
+		if i == 5 {
+			c <- fmt.Sprintf("Error Uploading: %s (%x)\n", buf, buf)
+			return
+		}
+	}
 }
