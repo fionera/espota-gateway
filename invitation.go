@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"net"
+	"net/netip"
 	"strings"
 	"time"
 )
@@ -16,19 +17,24 @@ const (
 	SpiFS command = 100
 )
 
+var publicIP = mustEnv("PUBLIC_IP")
+
 func (g *gateway) sendInvitation(c chan string, ip net.IP, cmd command, payload []byte) error {
+	port := g.firmwareListener.Addr().(*net.TCPAddr).Port
+	if cmd == SpiFS {
+		port = g.spifsListener.Addr().(*net.TCPAddr).Port
+	}
+
+	lAddr := net.UDPAddrFromAddrPort(netip.MustParseAddrPort(fmt.Sprintf("%s:%d", publicIP, port)))
+	rAddr := net.UDPAddrFromAddrPort(netip.MustParseAddrPort(ip.String() + ":8266"))
+
 	for i := 0; i < 10; i++ {
-		conn, err := net.Dial("udp", ip.String()+":8266")
+		conn, err := net.DialUDP("udp", lAddr, rAddr)
 		if err != nil {
 			return err
 		}
 
 		_ = conn.SetDeadline(time.Now().Add(time.Second * 10))
-
-		port := g.firmwareListener.Addr().(*net.TCPAddr).Port
-		if cmd == SpiFS {
-			port = g.spifsListener.Addr().(*net.TCPAddr).Port
-		}
 
 		sum := md5.Sum(payload)
 		msg := fmt.Sprintf("%d %d %d %s\n", cmd, port, len(payload), hex.EncodeToString(sum[:]))
