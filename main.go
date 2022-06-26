@@ -1,12 +1,10 @@
 package main
 
 import (
-	"fmt"
 	"io"
 	"log"
 	"net"
 	"net/http"
-	"os"
 	"sync"
 	"time"
 )
@@ -64,14 +62,6 @@ func newListener(addr string, handler func(conn net.Conn)) (net.Listener, error)
 	}()
 
 	return l, nil
-}
-
-func mustEnv(k string) string {
-	v, ok := os.LookupEnv(k)
-	if !ok {
-		panic(fmt.Sprintf("Missing ENV: %s", k))
-	}
-	return v
 }
 
 func main() {
