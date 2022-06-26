@@ -5,7 +5,6 @@ import (
 	"encoding/hex"
 	"fmt"
 	"net"
-	"net/netip"
 	"strings"
 	"time"
 )
@@ -25,11 +24,12 @@ func (g *gateway) sendInvitation(c chan string, ip net.IP, cmd command, payload 
 		port = g.spifsListener.Addr().(*net.TCPAddr).Port
 	}
 
-	lAddr := net.UDPAddrFromAddrPort(netip.MustParseAddrPort(fmt.Sprintf("%s:%d", publicIP, port)))
-	rAddr := net.UDPAddrFromAddrPort(netip.MustParseAddrPort(ip.String() + ":8266"))
-
 	for i := 0; i < 10; i++ {
-		conn, err := net.DialUDP("udp", lAddr, rAddr)
+		d := net.Dialer{
+			LocalAddr: &net.UDPAddr{IP: net.ParseIP(publicIP)},
+		}
+
+		conn, err := d.Dial("udp", ip.String()+":8266")
 		if err != nil {
 			return err
 		}
