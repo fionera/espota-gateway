@@ -12,7 +12,7 @@ import (
 type Payload struct {
 	IP       net.IP
 	Firmware []byte
-	SpiFS    []byte
+	Spiffs   []byte
 }
 
 type gateway struct {
@@ -71,8 +71,15 @@ func main() {
 	}
 
 	log.Println("startup")
-	http.Handle("/", g)
+	http.Handle("/", logRequest(g))
 	http.ListenAndServe(":8180", nil)
+}
+
+func logRequest(handler http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		log.Printf("%s %s %s\n", r.RemoteAddr, r.Method, r.URL)
+		handler.ServeHTTP(w, r)
+	})
 }
 
 func (g *gateway) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -108,6 +115,12 @@ func (g *gateway) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if len(r.MultipartForm.File) == 0 {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte("missing payload"))
+		return
+	}
+
 	for key, fileHeaders := range r.MultipartForm.File {
 		if len(fileHeaders) != 1 {
 			w.WriteHeader(http.StatusBadRequest)
@@ -134,7 +147,7 @@ func (g *gateway) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		case "firmware":
 			p.Firmware = all
 		case "spiffs":
-			p.SpiFS = all
+			p.Spiffs = all
 		default:
 			w.WriteHeader(http.StatusInternalServerError)
 			w.Write([]byte("invalid file name"))
@@ -191,7 +204,7 @@ func (g *gateway) handleFlash(p *Payload) <-chan string {
 			}
 		}
 
-		if p.SpiFS != nil {
+		if p.Spiffs != nil {
 			stageChan := make(chan string)
 			go func() {
 				<-time.NewTimer(10 * time.Minute).C
@@ -200,11 +213,11 @@ func (g *gateway) handleFlash(p *Payload) <-chan string {
 
 			g.mtx.Lock()
 			g.chanMap[p.IP.String()] = stageChan
-			g.payloadMap[p.IP.String()] = p.SpiFS
+			g.payloadMap[p.IP.String()] = p.Spiffs
 			g.mtx.Unlock()
 
-			c <- "Sending SpiFS Invite\n"
-			err := g.sendInvitation(c, p.IP, SpiFS, p.SpiFS)
+			c <- "Sending Spiffs Invite\n"
+			err := g.sendInvitation(c, p.IP, SpiFS, p.Spiffs)
 			if err != nil {
 				c <- err.Error()
 				return
